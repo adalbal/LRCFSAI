@@ -53,9 +53,6 @@ void multi_MxV(const iReg nrows, const iReg ncols, const rExt* __restrict__  dv,
                 dy[i] += dx[k+2] * dv[2];
                 dy[i] += dx[k+3] * dv[3];
                 dy[i] += dx[k+4] * dv[4];
-                dy[i] += dx[k+5] * dv[5];
-                dy[i] += dx[k+6] * dv[6];
-                dy[i] += dx[k+7] * dv[7];
             }
             break;
 
