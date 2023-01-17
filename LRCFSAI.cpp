@@ -104,23 +104,15 @@ void LRCFSAI::Compute(MatrixProd& inMatLap, vector<DSMat*> &subMatLap){
         for(int d=0; d<nRHS; ++d){
             eigval[d].assign(neig, 0.0);
             eigvec[d] = new DDMat_CPU(n, neig);
-            eigsol[d] = new Lanczos;
-            eigsol[d]->set_nEigs(neig);
-            eigsol[d]->set_maxITER(lanczos_maxit);
-            eigsol[d]->set_exitTOL(0.1*lanczos_atol); //ADEL - dirty workaround. exitTol seems rtol...
-            eigsol[d]->set_eigPart(lanczos_sigma.c_str());
-            eigsol[d]->set_cptEigVecs(true);
+            RestartedLanczos* rlanczos = new RestartedLanczos();
+            rlanczos->set_neig(neig);
+            rlanczos->set_itres(lanczos_maxit);
+            rlanczos->set_atol(lanczos_atol);
 
             try {
-                eigsol[d]->Set_Solver(*FunY[d]);
+                rlanczos->Solve(*FunY[d], *eigvec0, eigval[d], *eigvec[d]);
             } catch (linsol_error) {
-                throw linsol_error("LRCFSAI::Compute", "Lanczos::Set_Solver");
-            }
-
-            try {
-                eigsol[d]->Solve(*FunY[d], *eigvec0, eigval[d], *eigvec[d]);
-            } catch (linsol_error) {
-                throw linsol_error("LRCFSAI::Compute", "Lanczos::Solve");
+                throw linsol_error("LRCFSAI::Compute", "RestartedLanczos::Solve");
             }
 
             // correct eigenvalues: eigval[d][] = 1 - eigval[d][] (Y = Id - Yfun)
@@ -130,8 +122,8 @@ void LRCFSAI::Compute(MatrixProd& inMatLap, vector<DSMat*> &subMatLap){
             // set initial search space for Lanczos
             if(d==0) *eigvec0 = *eigvec[d];
 
-            delete eigsol[d];
-            eigsol[d] = nullptr;
+            delete rlanczos;
+            rlanczos = nullptr;
             delete FunY[d];
             FunY[d] = nullptr;
         }
